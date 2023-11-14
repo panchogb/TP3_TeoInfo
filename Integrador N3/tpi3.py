@@ -1,13 +1,58 @@
 import sys
 import os
 import math
+import numpy as np
 
 BITE_SIZE = 8
 
 def LeerArgumentos():
     args = sys.argv
-    for arg in args[0:]:
-        print(arg)
+    if (len(args) == 4):
+        if (os.path.exists(args[1]) and (args[3] == "-c" or args[3] == "-d")):
+            return True, args[1], args[2], args[3]
+    return False, None, None, None
+
+#Calculo de Datos
+def LongitudMedia(lista):
+    n = len(lista)
+    l = 0
+    for i in range(n):
+        l = l + lista[i][1] * len(lista[i][2])
+    return l
+
+def CalcularEntropia(lista):
+    n = len(lista)    
+    entropia = 0.0
+    for i in range(n):
+        entropia = entropia + lista[i][1] * np.log2(1/lista[i][1])    
+    return entropia
+
+def MostrarDatos(lista, original, comprimido):
+    tam_original = os.path.getsize(original)
+    tam_comprimido = os.path.getsize(comprimido)
+    tasa = tam_original / tam_comprimido
+
+    long = LongitudMedia(lista)
+    entropia = CalcularEntropia(lista)
+
+    rendimiento = entropia / long
+    redundancia = (long - entropia) / long
+
+    print(f'Tasa de compresion {tasa:.4f}:1')
+    print(f'Rendimento: {rendimiento:.4f}')
+    print(f'Redundancia: {redundancia:.4f}')
+
+#Barra
+def MostrarBarra(i, limit):
+    p = i/limit
+    i = int(30 * p)
+    limit = int(limit/30)
+
+    progress = f'{(100*p):3.0f}'    
+    if (i >= 29):
+        print(f'{progress} % [{"=" * 30}]', end='\r')
+    else:        
+        print(f'{progress} % [{"=" * i}>{"." * (29-i)}]', end='\r')
 
 #Metodos Binarios
 def IntToBinary(num):
@@ -68,6 +113,13 @@ def BuscarCodigo(lista, codigo):
         indice = -1
 
     return indice
+def CalcularProbabilidades(lista, suma):
+    cant = len(lista)
+    i = 0
+    while (i < cant): 
+        lista[i][1] /= suma
+        i += 1
+    return lista
 
 #Comprimir
 def LeerArchivo(direccion):
@@ -80,13 +132,8 @@ def LeerArchivo(direccion):
             suma += 1
             c = arch.read(1)
         arch.close()
-    
-    cant = len(lista)
-    i = 0
-    while (i < cant): 
-        lista[i][1] /= suma
-        i += 1
-    return lista
+
+    return CalcularProbabilidades(lista, suma)
 
 def RecorrerArbol(lista, a, b):
     if (b - a >= 2):            
@@ -143,18 +190,20 @@ def GuardarTabla(arch, lista):
             codigo = StringToBinary(codigo)
         arch.write(codigo)
 
-def Comprimir(original, compression):
-        
+def Comprimir(original, compressed):
+    file_size = os.path.getsize(original)
+    file_index = 1
+
     lista = LeerArchivo(original)
     lista = Shannon_Fano(lista)
 
-    with open(compression, 'wb') as archC:
+    with open(compressed, 'wb') as archC:
         GuardarTabla(archC, lista)
         cadena = ''
-        print(lista)
-        with open(original, 'r') as arch:
+        with open(original, 'r') as arch:            
             c = arch.read(1)
             while (c):
+
                 indice = BuscarIndice(lista, c)
                 cadena += lista[indice][2]
 
@@ -163,12 +212,16 @@ def Comprimir(original, compression):
                     cadena = cadena[BITE_SIZE:]
                 
                 c = arch.read(1)
+                MostrarBarra(file_index, file_size)
+                file_index += 1
 
         if (len(cadena) > 0):
             archC.write(StringToBinary(cadena, right=True))
-            
+        
         arch.close()
     archC.close()
+    print(end='\n')
+    MostrarDatos(lista, original, compressed)
 
 #Descomprimir
 def CargarTabla(arch):
@@ -190,24 +243,34 @@ def CargarTabla(arch):
             codigo = codigo + BinaryToString(byte)
         codigo = codigo[0:long]
 
-        lista.append([caracter, codigo])
+        lista.append([caracter, 0, codigo])
         j += 1
     return lista
 
 def Descomprimir(compressed, original):
+    file_size = os.path.getsize(compressed)
+    file_index = None
+    suma = 0
     with open(original, 'w') as archD:
         cadena = ''
         tam = 1
         with open(compressed, 'rb') as archC:
             lista = CargarTabla(archC)
             c = archC.read(1)
+            file_index = archC.tell()
             while (c):
+
+                MostrarBarra(file_index, file_size)
+                file_index += 1
+
                 cadena += BinaryToString(c)
                 while (tam < len(cadena)):
                     indice = BuscarCodigo(lista, cadena[0:tam])
                     if (indice != -1):
                         archD.write(lista[indice][0])
-                        cadena = cadena[tam:]
+                        cadena = cadena[tam:]                        
+                        lista[indice][1] += 1
+                        suma += 1
                         tam = 1
                     else:
                         tam += 1
@@ -216,15 +279,19 @@ def Descomprimir(compressed, original):
         archC.close()
     archD.close()
 
+    print(end='\n')
+    lista = CalcularProbabilidades(lista, suma)
+    MostrarDatos(lista, original, compressed)
+
 #Main
 sys.setrecursionlimit(100000)
-#original = f'tp3_sample0.txt'
-#compressed = f'tp3_sample0_compressed.bin'
 
-original = f'super.txt'
-compressed = f'super.bin'
-descompressed = f'super_.txt'
+argbool, url1, url2, flag = LeerArgumentos()
 
-#LeerArgumentos()
-#Comprimir(original, compressed)
-Descomprimir(compressed, descompressed)
+if (argbool):
+    if (flag == '-c'):
+        Comprimir(url1, url2) #original, compressed
+    else:
+        Descomprimir(url1, url2) #compressed, descompressed
+else:
+    print('Error de argumentos')
