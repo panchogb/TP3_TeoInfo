@@ -106,7 +106,7 @@ def BuscarIndice(lista, elemento):
 def BuscarCodigo(lista, codigo):
     indice = 0
     cant = len(lista)    
-    while (indice < cant and lista[indice][1] != codigo):
+    while (indice < cant and lista[indice][2] != codigo):
         indice += 1
 
     if (indice >= cant):
@@ -280,13 +280,20 @@ def Descomprimir(compressed, original):
     archD.close()
 
     print(end='\n')
-    lista = CalcularProbabilidades(lista, suma)
-    MostrarDatos(lista, original, compressed)
+    if (suma >= 0):
+        lista = CalcularProbabilidades(lista, suma)
+        MostrarDatos(lista, original, compressed)
+    else:
+        print("Error al descomprimir!")
 
 #Main
 sys.setrecursionlimit(100000)
 
-argbool, url1, url2, flag = LeerArgumentos()
+#argbool, url1, url2, flag = LeerArgumentos()
+argbool = True
+url1 = 'tp3_sample0.bin'
+url2 = 'tp3_sample0_.txt'
+flag = '-d'
 
 if (argbool):
     if (flag == '-c'):
