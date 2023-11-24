@@ -135,7 +135,7 @@ def LeerArchivo(direccion):
 
     return CalcularProbabilidades(lista, suma)
 
-def RecorrerArbol(lista, a, b):
+def RecorrerShannon_Fano(lista, a, b):
     if (b - a >= 2):            
         p = a - 1
         f = b + 1
@@ -154,8 +154,8 @@ def RecorrerArbol(lista, a, b):
                 lista[f][2] += '0'
                 sumf += lista[f][1]
 
-        lista = RecorrerArbol(lista, a, p)
-        lista = RecorrerArbol(lista, f, b)
+        lista = RecorrerShannon_Fano(lista, a, p)
+        lista = RecorrerShannon_Fano(lista, f, b)
     else:
         if (a != b):
             lista[a][2] += '1'
@@ -165,8 +165,41 @@ def RecorrerArbol(lista, a, b):
 
     return lista
 def Shannon_Fano(lista):
-    lista = RecorrerArbol(lista, 0, len(lista) - 1)
+    lista = RecorrerShannon_Fano(lista, 0, len(lista) - 1)
 
+    return lista
+
+def RecorrerShannon_Huffman(arboles):    
+    while (len(arboles) > 1):
+        n1 = arboles[-1]
+        n2 = arboles[-2]
+
+        elem = [n1[0] + n2[0], n1, n2]
+
+        arboles.pop(-1)
+        arboles.pop(-1)
+
+        i = len(arboles)
+        while (i > 0 and elem[0] > arboles[i - 1][0]):
+            i -= 1
+        arboles.insert(i, elem)
+    return arboles
+
+def GenerarCodigo_Huffman(lista, nodo, cod):
+    if (len(nodo) == 3):
+        lista = GenerarCodigo_Huffman(lista, nodo[1], f'{cod}1')
+        lista = GenerarCodigo_Huffman(lista, nodo[2], f'{cod}0')
+    else:
+        lista[nodo[1]][2] = cod
+    return lista
+
+def Huffman(lista):
+    N = len(lista)
+    arboles = []
+    for i in range(N):
+        arboles.append([lista[i][1], i])
+    arboles = RecorrerShannon_Huffman(arboles)
+    lista = GenerarCodigo_Huffman(lista, arboles[0], '')
     return lista
 
 def GuardarTabla(arch, lista):
@@ -195,8 +228,8 @@ def Comprimir(original, compressed):
     file_index = 1
 
     lista = LeerArchivo(original)
-    lista = Shannon_Fano(lista)
-
+    #lista = Shannon_Fano(lista)
+    lista = Huffman(lista)
     with open(compressed, 'wb') as archC:
         GuardarTabla(archC, lista)
         cadena = ''
@@ -289,11 +322,7 @@ def Descomprimir(compressed, original):
 #Main
 sys.setrecursionlimit(100000)
 
-#argbool, url1, url2, flag = LeerArgumentos()
-argbool = True
-url1 = 'tp3_sample0.bin'
-url2 = 'tp3_sample0_.txt'
-flag = '-d'
+argbool, url1, url2, flag = LeerArgumentos()
 
 if (argbool):
     if (flag == '-c'):
