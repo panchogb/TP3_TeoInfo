@@ -2,13 +2,14 @@ import sys
 import os
 import math
 import numpy as np
+import time
 
 BITE_SIZE = 8
 
 def LeerArgumentos():
     args = sys.argv
     if (len(args) == 4):
-        if (os.path.exists(args[1]) and (args[3] == "-c" or args[3] == "-d")):
+        if (args[3] == "-c" and (os.path.exists(args[1])) or (args[3] == "-d" and os.path.exists(args[2]))):
             return True, args[1], args[2], args[3]
     return False, None, None, None
 
@@ -39,7 +40,9 @@ def MostrarDatos(lista, original, comprimido):
     redundancia = (long - entropia) / long
 
     print(f'Tasa de compresion {tasa:.4f}:1')
-    print(f'Rendimento: {rendimiento:.4f}')
+    print(f'\nPeso archivo original: {(tam_original/ 1024.):.4f} kb')
+    print(f'Peso archivo comprimido: {(tam_comprimido/ 1024.):.4f} kb')
+    print(f'\nRendimento: {rendimiento:.4f}')
     print(f'Redundancia: {redundancia:.4f}')
 
 #Barra
@@ -228,8 +231,10 @@ def Comprimir(original, compressed):
     file_index = 1
 
     lista = LeerArchivo(original)
+
     #lista = Shannon_Fano(lista)
     lista = Huffman(lista)
+
     with open(compressed, 'wb') as archC:
         GuardarTabla(archC, lista)
         cadena = ''
@@ -325,9 +330,12 @@ sys.setrecursionlimit(100000)
 argbool, url1, url2, flag = LeerArgumentos()
 
 if (argbool):
+    inicio_tiempo = time.time()
     if (flag == '-c'):
         Comprimir(url1, url2) #original, compressed
     else:
-        Descomprimir(url1, url2) #compressed, descompressed
+        Descomprimir(url2, url1) #compressed, descompressed
+    fin_tiempo = time.time()
+    print(f"\nTiempo transcurrido: {(fin_tiempo - inicio_tiempo):.4f} segundos")
 else:
-    print('Error de argumentos')
+    print('\nError de argumentos')
