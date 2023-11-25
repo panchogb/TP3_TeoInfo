@@ -25,7 +25,8 @@ def CalcularEntropia(lista):
     n = len(lista)    
     entropia = 0.0
     for i in range(n):
-        entropia = entropia + lista[i][1] * np.log2(1/lista[i][1])    
+        if (lista[i][1] > 0):
+            entropia = entropia + lista[i][1] * np.log2(1/lista[i][1])    
     return entropia
 
 def MostrarDatos(lista, original, comprimido):
@@ -40,8 +41,8 @@ def MostrarDatos(lista, original, comprimido):
     redundancia = (long - entropia) / long
 
     print(f'Tasa de compresion {tasa:.4f}:1')
-    print(f'\nPeso archivo original: {(tam_original/ 1024.):.4f} kb')
-    print(f'Peso archivo comprimido: {(tam_comprimido/ 1024.):.4f} kb')
+    print(f'\Tamaño archivo original: {(tam_original/ 1024.):.4f} kb')
+    print(f'Tamaño archivo comprimido: {(tam_comprimido/ 1024.):.4f} kb')
     print(f'\nRendimento: {rendimiento:.4f}')
     print(f'Redundancia: {redundancia:.4f}')
 
@@ -93,10 +94,10 @@ def AgregarElemento(lista, elemento):
         if (i > 0):
             valor = lista[i][1]
             indice = i
-            i -= 1
-            while (i > 0 and valor > lista[i][1]):
-                i -= 1                
-            lista.insert(i, lista.pop(indice))            
+            while (i - 1 >= 0 and valor > lista[i - 1][1]):
+                i -= 1
+            if (valor > lista[i][1]):
+                lista.insert(i, lista.pop(indice))
 
     return lista
 def BuscarIndice(lista, elemento):
@@ -197,6 +198,7 @@ def GenerarCodigo_Huffman(lista, nodo, cod):
     return lista
 
 def Huffman(lista):
+    #lista.append([CHAR_LIMIT, 0.0, ''])
     N = len(lista)
     arboles = []
     for i in range(N):
